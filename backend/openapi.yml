@@ -1,0 +1,69 @@
+openapi: "3.1.0"
+
+info:
+  title: Codename Maps API
+  version: "1.0.0"
+
+paths:
+  /v1/edit:
+    post:
+      summary: Create an edit
+      operationId: createEdit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditRequest"
+      responses:
+        "202":
+          description: Edit accepted
+        "400":
+          description: Invalid request body
+
+components:
+  schemas:
+    EditRequest:
+      type: object
+      required:
+        - name
+        - author
+        - prompt
+        - start
+        - end
+      properties:
+        name:
+          type: string
+          description: Human-readable name for this edit
+          example: "Relocate bus stop"
+        author:
+          type: string
+          description: Name or identifier of the person submitting the edit
+          example: "jane.doe"
+        prompt:
+          type: string
+          description: Free-text description of the desired edit
+          example: "Move the bus stop 20 metres north to improve pedestrian access"
+        start:
+          $ref: "#/components/schemas/GeoJsonPoint"
+        end:
+          $ref: "#/components/schemas/GeoJsonPoint"
+
+    GeoJsonPoint:
+      type: object
+      required:
+        - type
+        - coordinates
+      properties:
+        type:
+          type: string
+          enum:
+            - Point
+        coordinates:
+          type: array
+          description: "[longitude, latitude] in WGS84"
+          items:
+            type: number
+          minItems: 2
+          maxItems: 3
+          example: [25.0040, 60.1699]
