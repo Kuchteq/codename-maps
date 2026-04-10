@@ -12,5 +12,8 @@ CREATE TABLE edits (
     end_lng     REAL    NOT NULL,
     end_lat     REAL    NOT NULL,
 
-    created_at  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    created_at  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+
+    -- Path to the generated noise PNG file
+    image_path  TEXT    NOT NULL DEFAULT ''
 );

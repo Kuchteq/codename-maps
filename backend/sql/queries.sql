@@ -6,9 +6,10 @@ INSERT INTO edits (
     start_lng,
     start_lat,
     end_lng,
-    end_lat
+    end_lat,
+    image_path
 ) VALUES (
-    ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?
 )
 RETURNING *;
 

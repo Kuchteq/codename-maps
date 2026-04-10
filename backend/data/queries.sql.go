@@ -17,21 +17,23 @@ INSERT INTO edits (
     start_lng,
     start_lat,
     end_lng,
-    end_lat
+    end_lat,
+    image_path
 ) VALUES (
-    ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?
 )
-RETURNING id, name, author, prompt, start_lng, start_lat, end_lng, end_lat, created_at
+RETURNING id, name, author, prompt, start_lng, start_lat, end_lng, end_lat, created_at, image_path
 `
 
 type CreateEditParams struct {
-	Name     string  `json:"name"`
-	Author   string  `json:"author"`
-	Prompt   string  `json:"prompt"`
-	StartLng float64 `json:"start_lng"`
-	StartLat float64 `json:"start_lat"`
-	EndLng   float64 `json:"end_lng"`
-	EndLat   float64 `json:"end_lat"`
+	Name      string  `json:"name"`
+	Author    string  `json:"author"`
+	Prompt    string  `json:"prompt"`
+	StartLng  float64 `json:"start_lng"`
+	StartLat  float64 `json:"start_lat"`
+	EndLng    float64 `json:"end_lng"`
+	EndLat    float64 `json:"end_lat"`
+	ImagePath string  `json:"image_path"`
 }
 
 func (q *Queries) CreateEdit(ctx context.Context, arg CreateEditParams) (Edit, error) {
@@ -43,6 +45,7 @@ func (q *Queries) CreateEdit(ctx context.Context, arg CreateEditParams) (Edit, e
 		arg.StartLat,
 		arg.EndLng,
 		arg.EndLat,
+		arg.ImagePath,
 	)
 	var i Edit
 	err := row.Scan(
@@ -55,6 +58,7 @@ func (q *Queries) CreateEdit(ctx context.Context, arg CreateEditParams) (Edit, e
 		&i.EndLng,
 		&i.EndLat,
 		&i.CreatedAt,
+		&i.ImagePath,
 	)
 	return i, err
 }
@@ -70,7 +74,7 @@ func (q *Queries) DeleteEdit(ctx context.Context, id int64) error {
 }
 
 const getEdit = `-- name: GetEdit :one
-SELECT id, name, author, prompt, start_lng, start_lat, end_lng, end_lat, created_at FROM edits
+SELECT id, name, author, prompt, start_lng, start_lat, end_lng, end_lat, created_at, image_path FROM edits
 WHERE id = ?
 LIMIT 1
 `
@@ -88,12 +92,13 @@ func (q *Queries) GetEdit(ctx context.Context, id int64) (Edit, error) {
 		&i.EndLng,
 		&i.EndLat,
 		&i.CreatedAt,
+		&i.ImagePath,
 	)
 	return i, err
 }
 
 const listEdits = `-- name: ListEdits :many
-SELECT id, name, author, prompt, start_lng, start_lat, end_lng, end_lat, created_at FROM edits
+SELECT id, name, author, prompt, start_lng, start_lat, end_lng, end_lat, created_at, image_path FROM edits
 ORDER BY created_at DESC
 `
 
@@ -116,6 +121,7 @@ func (q *Queries) ListEdits(ctx context.Context) ([]Edit, error) {
 			&i.EndLng,
 			&i.EndLat,
 			&i.CreatedAt,
+			&i.ImagePath,
 		); err != nil {
 			return nil, err
 		}
@@ -131,7 +137,7 @@ func (q *Queries) ListEdits(ctx context.Context) ([]Edit, error) {
 }
 
 const listEditsByAuthor = `-- name: ListEditsByAuthor :many
-SELECT id, name, author, prompt, start_lng, start_lat, end_lng, end_lat, created_at FROM edits
+SELECT id, name, author, prompt, start_lng, start_lat, end_lng, end_lat, created_at, image_path FROM edits
 WHERE author = ?
 ORDER BY created_at DESC
 `
@@ -155,6 +161,7 @@ func (q *Queries) ListEditsByAuthor(ctx context.Context, author string) ([]Edit,
 			&i.EndLng,
 			&i.EndLat,
 			&i.CreatedAt,
+			&i.ImagePath,
 		); err != nil {
 			return nil, err
 		}

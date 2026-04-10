@@ -14,4 +14,5 @@ type Edit struct {
 	EndLng    float64 `json:"end_lng"`
 	EndLat    float64 `json:"end_lat"`
 	CreatedAt string  `json:"created_at"`
+	ImagePath string  `json:"image_path"`
 }
