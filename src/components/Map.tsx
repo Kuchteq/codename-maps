@@ -120,13 +120,14 @@ interface DragState {
   current: ScreenPoint;
 }
 
-const getSelectionRect = (start: ScreenPoint, current: ScreenPoint) => {
-  const left = Math.min(start.x, current.x);
-  const top = Math.min(start.y, current.y);
-  const width = Math.abs(current.x - start.x);
-  const height = Math.abs(current.y - start.y);
+const getSelectionSquare = (start: ScreenPoint, current: ScreenPoint) => {
+  const deltaX = current.x - start.x;
+  const deltaY = current.y - start.y;
+  const side = Math.max(Math.abs(deltaX), Math.abs(deltaY));
+  const left = deltaX < 0 ? start.x - side : start.x;
+  const top = deltaY < 0 ? start.y - side : start.y;
 
-  return { left, top, width, height };
+  return { left, top, width: side, height: side };
 };
 
 const getPointFromEvent = (event: PointerEvent<HTMLDivElement>): ScreenPoint => {
@@ -144,7 +145,7 @@ export default function Map({ onSelectionChange }: MapProps) {
   const [selection, setSelection] = useState<MapSelection | null>(null);
 
   const finishSelection = (start: ScreenPoint, current: ScreenPoint) => {
-    const rect = getSelectionRect(start, current);
+    const rect = getSelectionSquare(start, current);
 
     if (rect.width < 4 || rect.height < 4) {
       setSelection(null);
@@ -291,7 +292,7 @@ export default function Map({ onSelectionChange }: MapProps) {
         {drag && (
           <div
             className="selection-rectangle"
-            style={getSelectionRect(drag.start, drag.current)}
+            style={getSelectionSquare(drag.start, drag.current)}
           />
         )}
       </div>
