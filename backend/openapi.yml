@@ -5,6 +5,20 @@ info:
   version: "1.0.0"
 
 paths:
+  /v1/edits:
+    get:
+      summary: List edits
+      operationId: listEdits
+      responses:
+        "200":
+          description: Saved edits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Edit"
+
   /v1/edit:
     post:
       summary: Create an edit
@@ -23,6 +37,36 @@ paths:
 
 components:
   schemas:
+    Edit:
+      type: object
+      required:
+        - id
+        - name
+        - author
+        - prompt
+        - start
+        - end
+        - createdAt
+        - imagePath
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        author:
+          type: string
+        prompt:
+          type: string
+        start:
+          $ref: "#/components/schemas/GeoJsonPoint"
+        end:
+          $ref: "#/components/schemas/GeoJsonPoint"
+        createdAt:
+          type: string
+        imagePath:
+          type: string
+
     EditRequest:
       type: object
       required:

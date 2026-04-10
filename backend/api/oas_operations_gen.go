@@ -7,4 +7,5 @@ type OperationName = string
 
 const (
 	CreateEditOperation OperationName = "CreateEdit"
+	ListEditsOperation  OperationName = "ListEdits"
 )

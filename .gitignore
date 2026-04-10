@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Backend runtime output
+backend/codename-maps-edit-service
+backend/edits.db
+backend/generated/
+backend/tileservice/data/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

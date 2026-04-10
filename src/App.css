@@ -189,3 +189,59 @@
   pointer-events: none;
   mix-blend-mode: screen;
 }
+
+.creations-panel {
+  position: absolute;
+  top: clamp(68px, 10vh, 96px);
+  left: clamp(18px, 3vw, 36px);
+  z-index: 20;
+  width: min(220px, calc(100vw - 40px));
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 22px rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  mix-blend-mode: screen;
+}
+
+.creations-panel h2,
+.creations-panel p {
+  margin: 0;
+}
+
+.creations-panel h2 {
+  font-size: 0.78rem;
+  line-height: 1;
+}
+
+.creations-panel p {
+  margin-top: 5px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.72rem;
+}
+
+.creations-panel article {
+  display: grid;
+  gap: 2px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.creations-panel strong,
+.creations-panel span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.creations-panel strong {
+  font-size: 0.75rem;
+}
+
+.creations-panel span {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.7rem;
+}

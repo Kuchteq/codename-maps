@@ -16,6 +16,98 @@ type CreateEditBadRequest struct{}
 
 func (*CreateEditBadRequest) createEditRes() {}
 
+// Ref: #/components/schemas/Edit
+type Edit struct {
+	ID        int64        `json:"id"`
+	Name      string       `json:"name"`
+	Author    string       `json:"author"`
+	Prompt    string       `json:"prompt"`
+	Start     GeoJsonPoint `json:"start"`
+	End       GeoJsonPoint `json:"end"`
+	CreatedAt string       `json:"createdAt"`
+	ImagePath string       `json:"imagePath"`
+}
+
+// GetID returns the value of ID.
+func (s *Edit) GetID() int64 {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *Edit) GetName() string {
+	return s.Name
+}
+
+// GetAuthor returns the value of Author.
+func (s *Edit) GetAuthor() string {
+	return s.Author
+}
+
+// GetPrompt returns the value of Prompt.
+func (s *Edit) GetPrompt() string {
+	return s.Prompt
+}
+
+// GetStart returns the value of Start.
+func (s *Edit) GetStart() GeoJsonPoint {
+	return s.Start
+}
+
+// GetEnd returns the value of End.
+func (s *Edit) GetEnd() GeoJsonPoint {
+	return s.End
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *Edit) GetCreatedAt() string {
+	return s.CreatedAt
+}
+
+// GetImagePath returns the value of ImagePath.
+func (s *Edit) GetImagePath() string {
+	return s.ImagePath
+}
+
+// SetID sets the value of ID.
+func (s *Edit) SetID(val int64) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *Edit) SetName(val string) {
+	s.Name = val
+}
+
+// SetAuthor sets the value of Author.
+func (s *Edit) SetAuthor(val string) {
+	s.Author = val
+}
+
+// SetPrompt sets the value of Prompt.
+func (s *Edit) SetPrompt(val string) {
+	s.Prompt = val
+}
+
+// SetStart sets the value of Start.
+func (s *Edit) SetStart(val GeoJsonPoint) {
+	s.Start = val
+}
+
+// SetEnd sets the value of End.
+func (s *Edit) SetEnd(val GeoJsonPoint) {
+	s.End = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *Edit) SetCreatedAt(val string) {
+	s.CreatedAt = val
+}
+
+// SetImagePath sets the value of ImagePath.
+func (s *Edit) SetImagePath(val string) {
+	s.ImagePath = val
+}
+
 // Ref: #/components/schemas/EditRequest
 type EditRequest struct {
 	// Human-readable name for this edit.

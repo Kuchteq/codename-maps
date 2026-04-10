@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"image"
 	"os"
-	"sync"
 
 	"github.com/paulmach/orb/maptile"
 	"kuchta.dev/codename-maps-edit-service/api"
@@ -52,45 +52,24 @@ func (h *Handler) CreateEdit(ctx context.Context, req *api.EditRequest) (api.Cre
 	startLat := startCoords[1]
 	endLng := endCoords[0]
 	endLat := endCoords[1]
+	west := min(startLng, endLng)
+	east := max(startLng, endLng)
+	south := min(startLat, endLat)
+	north := max(startLat, endLat)
 
-	// Run noise PNG generation and WMS tile fetching concurrently --
-	// they are completely independent of each other.
-	var (
-		imagePath string
-		wg        sync.WaitGroup
-		noiseErr  error
-		tilesErr  error
-	)
-
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
-		var err error
-		imagePath, err = generateNoisePNG(h.generatedDir, startLng, startLat, endLng, endLat)
-		if err != nil {
-			noiseErr = fmt.Errorf("generate noise png: %w", err)
-		}
-	}()
-
-	go func() {
-		defer wg.Done()
-		if err := h.generateTilesFromWMS(ctx, startLng, startLat, endLng, endLat); err != nil {
-			tilesErr = fmt.Errorf("generate wms tiles: %w", err)
-		}
-	}()
-
-	wg.Wait()
-
-	if noiseErr != nil {
-		return nil, noiseErr
+	// 1. Fetch the selected map crop at 1024x1024 and edit it with Nano Banana.
+	imagePath, editedImage, err := generateEditedPNG(h.generatedDir, req.GetPrompt(), west, east, south, north)
+	if err != nil {
+		return nil, fmt.Errorf("generate edited png: %w", err)
 	}
-	if tilesErr != nil {
-		return nil, tilesErr
+
+	// 2. Cut the edited image into transparent map overlay tiles.
+	if err := h.generateTilesFromImage(editedImage, west, east, south, north); err != nil {
+		return nil, fmt.Errorf("generate edited image tiles: %w", err)
 	}
 
 	// 3. Persist the edit record.
-	_, err := h.q.CreateEdit(ctx, data.CreateEditParams{
+	_, err = h.q.CreateEdit(ctx, data.CreateEditParams{
 		Name:      req.GetName(),
 		Author:    req.GetAuthor(),
 		Prompt:    req.GetPrompt(),
@@ -107,14 +86,44 @@ func (h *Handler) CreateEdit(ctx context.Context, req *api.EditRequest) (api.Cre
 	return &api.CreateEditAccepted{}, nil
 }
 
-// generateTilesFromWMS fetches XYZ tiles (zoom 0–14) covering the given WGS84
-// bounding box from the Helsinki WMS, dims them by 50%, and writes them into
-// h.tilesDir.
-func (h *Handler) generateTilesFromWMS(ctx context.Context, startLng, startLat, endLng, endLat float64) error {
-	west := min(startLng, endLng)
-	east := max(startLng, endLng)
-	south := min(startLat, endLat)
-	north := max(startLat, endLat)
+// ListEdits implements GET /v1/edits.
+func (h *Handler) ListEdits(ctx context.Context) ([]api.Edit, error) {
+	edits, err := h.q.ListEdits(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list edits: %w", err)
+	}
 
-	return GenerateTiles(ctx, west, east, south, north, h.tilesDir, maptile.Zoom(0), maptile.Zoom(14))
+	res := make([]api.Edit, 0, len(edits))
+	for _, edit := range edits {
+		res = append(res, api.Edit{
+			ID:     edit.ID,
+			Name:   edit.Name,
+			Author: edit.Author,
+			Prompt: edit.Prompt,
+			Start: api.GeoJsonPoint{
+				Type:        api.GeoJsonPointTypePoint,
+				Coordinates: []float64{edit.StartLng, edit.StartLat},
+			},
+			End: api.GeoJsonPoint{
+				Type:        api.GeoJsonPointTypePoint,
+				Coordinates: []float64{edit.EndLng, edit.EndLat},
+			},
+			CreatedAt: edit.CreatedAt,
+			ImagePath: edit.ImagePath,
+		})
+	}
+
+	return res, nil
+}
+
+// generateTilesFromImage writes XYZ tiles (zoom 0-14) covering the given WGS84
+// bounding box into h.tilesDir.
+func (h *Handler) generateTilesFromImage(
+	editedImage image.Image,
+	west float64,
+	east float64,
+	south float64,
+	north float64,
+) error {
+	return GenerateTilesFromImage(editedImage, west, east, south, north, h.tilesDir, maptile.Zoom(0), maptile.Zoom(14))
 }

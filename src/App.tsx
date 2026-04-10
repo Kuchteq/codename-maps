@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { apiClient } from './api';
-import type { EditRequest } from './api';
+import type { Edit, EditRequest } from './api';
 import Map from './components/Map';
 import type { MapSelection } from './components/Map';
 import './App.css';
@@ -21,6 +21,8 @@ function App() {
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'submitting' | 'sent' | 'error'>(
     'idle',
   );
+  const [tileRevision, setTileRevision] = useState(() => Date.now());
+  const [edits, setEdits] = useState<Edit[]>([]);
 
   const updateCreationDetails = (field: keyof CreationDetails, value: string) => {
     setCreationDetails((details) => ({ ...details, [field]: value }));
@@ -31,6 +33,36 @@ function App() {
     setSelectedArea(selection);
     setSubmitStatus('idle');
   };
+
+  const refreshEdits = async () => {
+    const { data, error } = await apiClient.GET('/v1/edits');
+
+    if (error) {
+      console.error('Failed to load edits:', error);
+      return;
+    }
+
+    setEdits((previousEdits) => {
+      const previousSignature = previousEdits.map((edit) => `${edit.id}:${edit.createdAt}`).join('|');
+      const nextSignature = data.map((edit) => `${edit.id}:${edit.createdAt}`).join('|');
+
+      if (previousSignature !== nextSignature) {
+        setTileRevision(Date.now());
+      }
+
+      return data;
+    });
+  };
+
+  useEffect(() => {
+    void refreshEdits();
+
+    const interval = window.setInterval(() => {
+      void refreshEdits();
+    }, 3000);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   const handleCreationSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -66,13 +98,14 @@ function App() {
     }
 
     setSubmitStatus('sent');
+    await refreshEdits();
   };
 
   return (
     <div className="app">
-      <Map onSelectionChange={handleSelectionChange} />
+      <Map edits={edits} tileRevision={tileRevision} onSelectionChange={handleSelectionChange} />
       <img className="tv-overlay" src="/gfx/tv.png" alt="" aria-hidden="true" />
-      <h1 className="app-title">7 layers of hell</h1>
+      <h1 className="app-title">7 layers of hel</h1>
       {selectedArea && (
         <form className="prompt-box" onSubmit={handleCreationSubmit}>
           <input
@@ -115,6 +148,16 @@ function App() {
             )} - ${selectedArea.geoBounds.east.toFixed(5)}, ${selectedArea.geoBounds.north.toFixed(5)}`
           : 'Drag to select an area'}
       </output>
+      <section className="creations-panel" aria-label="Recent creations">
+        <h2>Creations</h2>
+        <p>{edits.length ? `${edits.length} live` : 'No creations yet'}</p>
+        {edits.slice(0, 4).map((edit) => (
+          <article key={edit.id}>
+            <strong>{edit.name}</strong>
+            <span>{edit.author}</span>
+          </article>
+        ))}
+      </section>
     </div>
   );
 }

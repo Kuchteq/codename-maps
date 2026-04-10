@@ -9,6 +9,40 @@ import (
 	"github.com/ogen-go/ogen/validate"
 )
 
+func (s *Edit) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Start.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "start",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.End.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "end",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
 func (s *EditRequest) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer

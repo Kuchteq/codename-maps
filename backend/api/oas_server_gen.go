@@ -14,6 +14,12 @@ type Handler interface {
 	//
 	// POST /v1/edit
 	CreateEdit(ctx context.Context, req *EditRequest) (CreateEditRes, error)
+	// ListEdits implements listEdits operation.
+	//
+	// List edits.
+	//
+	// GET /v1/edits
+	ListEdits(ctx context.Context) ([]Edit, error)
 }
 
 // Server implements http server based on OpenAPI v3 specification and

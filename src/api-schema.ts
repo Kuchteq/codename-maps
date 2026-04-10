@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/v1/edits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List edits */
+        get: operations["listEdits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/edit": {
         parameters: {
             query?: never;
@@ -25,6 +42,17 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Edit: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            author: string;
+            prompt: string;
+            start: components["schemas"]["GeoJsonPoint"];
+            end: components["schemas"]["GeoJsonPoint"];
+            createdAt: string;
+            imagePath: string;
+        };
         EditRequest: {
             /**
              * @description Human-readable name for this edit
@@ -65,6 +93,26 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listEdits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Saved edits */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Edit"][];
+                };
+            };
+        };
+    };
     createEdit: {
         parameters: {
             query?: never;

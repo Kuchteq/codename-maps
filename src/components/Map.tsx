@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { PointerEvent } from 'react';
 import { Layer, Map as MapLibre, Source } from 'react-map-gl/maplibre';
 import type { MapRef } from 'react-map-gl/maplibre';
 import type { FillLayerSpecification, LineLayerSpecification, StyleSpecification } from 'maplibre-gl';
+import type { Edit } from '../api';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 const WMS_BASE = 'https://kartta.hel.fi/ws/geoserver/avoindata/wms';
@@ -20,7 +21,7 @@ const wmsUrl =
   `&WIDTH=256&HEIGHT=256` +
   `&BBOX={bbox-epsg-3857}`;
 
-const MAP_STYLE: StyleSpecification = {
+const createMapStyle = (tileRevision: number): StyleSpecification => ({
   version: 8,
   sources: {
     'helsinki-ortho': {
@@ -31,6 +32,14 @@ const MAP_STYLE: StyleSpecification = {
       bounds: [24.819, 60.124, 25.272, 60.305],
       attribution:
         '&copy; <a href="https://hri.fi/data/dataset/helsingin-ortoilmakuvat">Helsingin kaupunki</a>',
+    },
+    'local-edits': {
+      type: 'raster',
+      tiles: [`http://localhost:8080/tiles/{z}/{x}/{y}.png?v=${tileRevision}`],
+      tileSize: 256,
+      bounds: [24.819, 60.124, 25.272, 60.305],
+      minzoom: 0,
+      maxzoom: 14,
     },
   },
   layers: [
@@ -45,8 +54,14 @@ const MAP_STYLE: StyleSpecification = {
       source: 'helsinki-ortho',
       paint: { 'raster-opacity': 1 },
     },
+    {
+      id: 'local-edits-layer',
+      type: 'raster',
+      source: 'local-edits',
+      paint: { 'raster-opacity': 1 },
+    },
   ],
-};
+});
 
 // Helsinki bounding box [west, south, east, north] — matches ortho layer extent
 const HELSINKI_BOUNDS: [number, number, number, number] = [24.819, 60.124, 25.272, 60.305];
@@ -77,6 +92,28 @@ const SELECTED_AREA_OUTLINE: LineLayerSpecification = {
     'line-width': 2,
     'line-opacity': 0.95,
     'line-blur': 0.5,
+  },
+};
+
+const SAVED_EDIT_FILL: FillLayerSpecification = {
+  id: 'saved-edit-fill',
+  type: 'fill',
+  source: 'saved-edits',
+  paint: {
+    'fill-color': '#ffffff',
+    'fill-opacity': 0.08,
+  },
+};
+
+const SAVED_EDIT_OUTLINE: LineLayerSpecification = {
+  id: 'saved-edit-outline',
+  type: 'line',
+  source: 'saved-edits',
+  paint: {
+    'line-color': '#ffffff',
+    'line-width': 1.5,
+    'line-opacity': 0.75,
+    'line-blur': 0.4,
   },
 };
 
@@ -112,6 +149,8 @@ export interface MapSelection {
 }
 
 interface MapProps {
+  edits: Edit[];
+  tileRevision: number;
   onSelectionChange?: (selection: MapSelection | null) => void;
 }
 
@@ -139,10 +178,49 @@ const getPointFromEvent = (event: PointerEvent<HTMLDivElement>): ScreenPoint => 
   };
 };
 
-export default function Map({ onSelectionChange }: MapProps) {
+const editToFeature = (edit: Edit) => {
+  const [startLng, startLat] = edit.start.coordinates;
+  const [endLng, endLat] = edit.end.coordinates;
+  const west = Math.min(startLng, endLng);
+  const east = Math.max(startLng, endLng);
+  const south = Math.min(startLat, endLat);
+  const north = Math.max(startLat, endLat);
+
+  return {
+    type: 'Feature' as const,
+    properties: {
+      id: edit.id,
+      name: edit.name,
+      author: edit.author,
+      prompt: edit.prompt,
+    },
+    geometry: {
+      type: 'Polygon' as const,
+      coordinates: [
+        [
+          [west, north],
+          [east, north],
+          [east, south],
+          [west, south],
+          [west, north],
+        ],
+      ],
+    },
+  };
+};
+
+export default function Map({ edits, tileRevision, onSelectionChange }: MapProps) {
   const mapRef = useRef<MapRef>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [selection, setSelection] = useState<MapSelection | null>(null);
+  const mapStyle = useMemo(() => createMapStyle(tileRevision), [tileRevision]);
+  const savedEditsGeoJson = useMemo(
+    () => ({
+      type: 'FeatureCollection' as const,
+      features: edits.map(editToFeature),
+    }),
+    [edits],
+  );
 
   const finishSelection = (start: ScreenPoint, current: ScreenPoint) => {
     const rect = getSelectionSquare(start, current);
@@ -263,12 +341,18 @@ export default function Map({ onSelectionChange }: MapProps) {
         ref={mapRef}
         initialViewState={INITIAL_VIEW}
         style={{ width: '100%', height: '100%' }}
-        mapStyle={MAP_STYLE}
+        mapStyle={mapStyle}
         maxBounds={HELSINKI_BOUNDS}
         minZoom={10}
         maxZoom={20}
         attributionControl={false}
       >
+        {savedEditsGeoJson.features.length > 0 && (
+          <Source id="saved-edits" type="geojson" data={savedEditsGeoJson}>
+            <Layer {...SAVED_EDIT_FILL} />
+            <Layer {...SAVED_EDIT_OUTLINE} />
+          </Source>
+        )}
         {selectedAreaGeoJson && (
           <Source id="selected-area" type="geojson" data={selectedAreaGeoJson}>
             <Layer {...SELECTED_AREA_FILL} />

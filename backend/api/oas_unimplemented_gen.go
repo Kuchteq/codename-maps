@@ -21,3 +21,12 @@ var _ Handler = UnimplementedHandler{}
 func (UnimplementedHandler) CreateEdit(ctx context.Context, req *EditRequest) (r CreateEditRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
+
+// ListEdits implements listEdits operation.
+//
+// List edits.
+//
+// GET /v1/edits
+func (UnimplementedHandler) ListEdits(ctx context.Context) (r []Edit, _ error) {
+	return r, ht.ErrNotImplemented
+}
