@@ -1,0 +1,93 @@
+.app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.tv-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+  user-select: none;
+}
+
+.app-title {
+  position: absolute;
+  top: clamp(12px, 3vh, 28px);
+  left: 50%;
+  z-index: 20;
+  transform: translateX(-50%);
+  margin: 0;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: clamp(1.2rem, 3.4vw, 2.4rem);
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+  text-align: center;
+  text-shadow:
+    0 0 18px rgba(255, 255, 255, 0.5),
+    0 2px 18px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.prompt-box {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(18px, 4vh, 42px);
+  transform: translateX(-50%);
+  z-index: 20;
+  width: min(360px, calc(100vw - 40px));
+  padding: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  border-radius: 999px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04)),
+    rgba(255, 255, 255, 0.02);
+  box-shadow:
+    0 0 28px rgba(255, 255, 255, 0.2),
+    inset 0 0 24px rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px) brightness(1.35);
+  mix-blend-mode: screen;
+}
+
+.prompt-input {
+  display: block;
+  width: 100%;
+  min-height: 36px;
+  max-height: 36px;
+  resize: none;
+  border: 0;
+  border-radius: 999px;
+  outline: none;
+  padding: 8px 14px;
+  color: rgba(255, 255, 255, 0.94);
+  background: transparent;
+  font: inherit;
+  font-size: 0.88rem;
+  line-height: 1.3;
+  overflow: hidden;
+}
+
+.prompt-input::placeholder {
+  color: rgba(255, 255, 255, 0.66);
+}
+
+.prompt-input:focus {
+  box-shadow: none;
+}
+
+.prompt-box:focus-within {
+  border-color: rgba(255, 255, 255, 0.58);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08)),
+    rgba(255, 255, 255, 0.04);
+  box-shadow:
+    0 0 36px rgba(255, 255, 255, 0.28),
+    inset 0 0 26px rgba(255, 255, 255, 0.18);
+}
