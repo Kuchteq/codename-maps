@@ -1,4 +1,4 @@
-CREATE TABLE edits (
+CREATE TABLE IF NOT EXISTS edits (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     name        TEXT    NOT NULL,
     author      TEXT    NOT NULL,

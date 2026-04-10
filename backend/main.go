@@ -43,6 +43,21 @@ func main() {
 	}
 	defer db.Close()
 
+	// SQLite performance tuning.
+	for _, pragma := range []string{
+		"PRAGMA journal_mode=WAL",    // concurrent readers + writer
+		"PRAGMA synchronous=NORMAL",  // safe with WAL, much faster than FULL
+		"PRAGMA cache_size=-20000",   // 20 MB page cache (negative = KiB)
+		"PRAGMA busy_timeout=5000",   // wait 5s on lock instead of failing immediately
+		"PRAGMA foreign_keys=ON",     // enforce FK constraints
+		"PRAGMA temp_store=MEMORY",   // temp tables in memory
+		"PRAGMA mmap_size=268435456", // memory-map up to 256 MB of the db file
+	} {
+		if _, err := db.Exec(pragma); err != nil {
+			log.Fatalf("set %s: %v", pragma, err)
+		}
+	}
+
 	if err := migrate(db); err != nil {
 		log.Fatalf("migrate: %v", err)
 	}

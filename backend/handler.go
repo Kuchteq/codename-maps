@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/paulmach/orb/maptile"
 	"kuchta.dev/codename-maps-edit-service/api"
@@ -52,19 +53,44 @@ func (h *Handler) CreateEdit(ctx context.Context, req *api.EditRequest) (api.Cre
 	endLng := endCoords[0]
 	endLat := endCoords[1]
 
-	// 1. Generate noise PNG.
-	imagePath, err := generateNoisePNG(h.generatedDir, startLng, startLat, endLng, endLat)
-	if err != nil {
-		return nil, fmt.Errorf("generate noise png: %w", err)
-	}
+	// Run noise PNG generation and WMS tile fetching concurrently --
+	// they are completely independent of each other.
+	var (
+		imagePath string
+		wg        sync.WaitGroup
+		noiseErr  error
+		tilesErr  error
+	)
 
-	// 2. Fetch WMS tiles for the bounding box and dim them.
-	if err := h.generateTilesFromWMS(startLng, startLat, endLng, endLat); err != nil {
-		return nil, fmt.Errorf("generate wms tiles: %w", err)
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		var err error
+		imagePath, err = generateNoisePNG(h.generatedDir, startLng, startLat, endLng, endLat)
+		if err != nil {
+			noiseErr = fmt.Errorf("generate noise png: %w", err)
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		if err := h.generateTilesFromWMS(ctx, startLng, startLat, endLng, endLat); err != nil {
+			tilesErr = fmt.Errorf("generate wms tiles: %w", err)
+		}
+	}()
+
+	wg.Wait()
+
+	if noiseErr != nil {
+		return nil, noiseErr
+	}
+	if tilesErr != nil {
+		return nil, tilesErr
 	}
 
 	// 3. Persist the edit record.
-	_, err = h.q.CreateEdit(ctx, data.CreateEditParams{
+	_, err := h.q.CreateEdit(ctx, data.CreateEditParams{
 		Name:      req.GetName(),
 		Author:    req.GetAuthor(),
 		Prompt:    req.GetPrompt(),
@@ -84,11 +110,11 @@ func (h *Handler) CreateEdit(ctx context.Context, req *api.EditRequest) (api.Cre
 // generateTilesFromWMS fetches XYZ tiles (zoom 0–14) covering the given WGS84
 // bounding box from the Helsinki WMS, dims them by 50%, and writes them into
 // h.tilesDir.
-func (h *Handler) generateTilesFromWMS(startLng, startLat, endLng, endLat float64) error {
+func (h *Handler) generateTilesFromWMS(ctx context.Context, startLng, startLat, endLng, endLat float64) error {
 	west := min(startLng, endLng)
 	east := max(startLng, endLng)
 	south := min(startLat, endLat)
 	north := max(startLat, endLat)
 
-	return GenerateTiles(west, east, south, north, h.tilesDir, maptile.Zoom(0), maptile.Zoom(14))
+	return GenerateTiles(ctx, west, east, south, north, h.tilesDir, maptile.Zoom(0), maptile.Zoom(14))
 }

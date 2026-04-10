@@ -274,6 +274,18 @@ export default function Map({ onSelectionChange }: MapProps) {
             <Layer {...SELECTED_AREA_OUTLINE} />
           </Source>
         )}
+
+      <Source
+        id="edits"
+        type="raster"
+        url="http://localhost:8080/tiles.json"
+        tileSize={512}
+      >
+        <Layer
+          id="edits-layer"
+          type="raster"
+        />
+      </Source>
       </MapLibre>
       <div className="selection-layer">
         {drag && (

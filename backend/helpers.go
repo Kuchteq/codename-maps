@@ -1,9 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"image"
-	"image/color"
 	"image/png"
 	"math"
 	"math/rand"
@@ -40,15 +40,15 @@ func generateNoisePNG(dir string, startLng, startLat, endLng, endLat float64) (s
 	}
 
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
-			img.SetRGBA(x, y, color.RGBA{
-				R: uint8(rand.Intn(256)),
-				G: uint8(rand.Intn(256)),
-				B: uint8(rand.Intn(256)),
-				A: 255,
-			})
-		}
+
+	// Write directly into the Pix slice -- avoids the overhead of
+	// img.SetRGBA() which performs bounds checking on every call.
+	pix := img.Pix
+	for i := 0; i < len(pix); i += 4 {
+		pix[i+0] = uint8(rand.Intn(256)) // R
+		pix[i+1] = uint8(rand.Intn(256)) // G
+		pix[i+2] = uint8(rand.Intn(256)) // B
+		pix[i+3] = 255                   // A
 	}
 
 	ts := time.Now().UnixNano()
@@ -62,8 +62,15 @@ func generateNoisePNG(dir string, startLng, startLat, endLng, endLat float64) (s
 	}
 	defer f.Close()
 
-	if err := png.Encode(f, img); err != nil {
+	// Buffer writes and use fast compression -- noise is incompressible anyway,
+	// so spending CPU on compression is pure waste.
+	bw := bufio.NewWriterSize(f, 32*1024)
+	enc := &png.Encoder{CompressionLevel: png.NoCompression}
+	if err := enc.Encode(bw, img); err != nil {
 		return "", fmt.Errorf("encode png: %w", err)
+	}
+	if err := bw.Flush(); err != nil {
+		return "", fmt.Errorf("flush png: %w", err)
 	}
 
 	return path, nil
