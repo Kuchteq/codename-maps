@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { apiClient } from './api';
+import type { EditRequest } from './api';
 import Map from './components/Map';
 import type { MapSelection } from './components/Map';
 import './App.css';
@@ -16,29 +18,59 @@ function App() {
     author: '',
     prompt: '',
   });
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'submitting' | 'sent' | 'error'>(
+    'idle',
+  );
 
   const updateCreationDetails = (field: keyof CreationDetails, value: string) => {
     setCreationDetails((details) => ({ ...details, [field]: value }));
+    setSubmitStatus('idle');
   };
 
-  const handleCreationSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSelectionChange = (selection: MapSelection | null) => {
+    setSelectedArea(selection);
+    setSubmitStatus('idle');
+  };
+
+  const handleCreationSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!selectedArea) {
       return;
     }
 
-    const creationPayload = {
-      selection: selectedArea,
-      details: creationDetails,
+    const editRequest: EditRequest = {
+      name: creationDetails.name,
+      author: creationDetails.author,
+      prompt: creationDetails.prompt,
+      start: {
+        type: 'Point',
+        coordinates: [selectedArea.geoBounds.west, selectedArea.geoBounds.south],
+      },
+      end: {
+        type: 'Point',
+        coordinates: [selectedArea.geoBounds.east, selectedArea.geoBounds.north],
+      },
     };
 
-    console.log('Creation payload ready for backend:', creationPayload);
+    setSubmitStatus('submitting');
+
+    const { error } = await apiClient.POST('/v1/edit', {
+      body: editRequest,
+    });
+
+    if (error) {
+      setSubmitStatus('error');
+      console.error('Failed to submit edit:', error);
+      return;
+    }
+
+    setSubmitStatus('sent');
   };
 
   return (
     <div className="app">
-      <Map onSelectionChange={setSelectedArea} />
+      <Map onSelectionChange={handleSelectionChange} />
       <img className="tv-overlay" src="/gfx/tv.png" alt="" aria-hidden="true" />
       <h1 className="app-title">7 layers of hell</h1>
       {selectedArea && (
@@ -67,9 +99,13 @@ function App() {
             onChange={(event) => updateCreationDetails('prompt', event.target.value)}
             rows={1}
           />
-          <button className="prompt-submit" type="submit">
-            Add
+          <button className="prompt-submit" type="submit" disabled={submitStatus === 'submitting'}>
+            {submitStatus === 'submitting' ? 'Adding' : 'Add'}
           </button>
+          <p className="submit-status" role="status">
+            {submitStatus === 'sent' && 'Sent'}
+            {submitStatus === 'error' && 'Could not send'}
+          </p>
         </form>
       )}
       <output className="selection-debug" aria-live="polite">
