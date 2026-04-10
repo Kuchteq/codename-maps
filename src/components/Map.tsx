@@ -64,6 +64,7 @@ export default function Map() {
       maxBounds={HELSINKI_BOUNDS}
       minZoom={10}
       maxZoom={20}
+      attributionControl={false}
     />
   );
 }
